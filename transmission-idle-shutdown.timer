@@ -1,0 +1,13 @@
+[Unit]
+Description=Periodically check if transmission-daemon is idle
+BindsTo=transmission-daemon.service
+After=transmission-daemon.service
+
+[Timer]
+# Check every 5 minutes; with a 30-minute IDLE_THRESHOLD in config,
+# the daemon stops within ~5 minutes of crossing the threshold.
+OnBootSec=5min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

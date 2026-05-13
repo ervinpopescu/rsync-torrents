@@ -1,0 +1,18 @@
+# --- rsync targets ---
+REMOTE_USER=myuser
+REMOTE_HOST=myserver.example.com
+REMOTE_GROUP=media   # files on the server are chowned to this group
+REMOTE_PATH_MOVIES=/mnt/storage/movies
+REMOTE_PATH_SERIES=/mnt/storage/series
+REMOTE_PATH_DEFAULT=/mnt/storage/unsorted  # fallback when no recognised label is set
+SSH_KEY=""   # leave empty to use ssh-agent / default key
+
+# --- state tracking ---
+LOG_FILE="${HOME}/.local/share/rsync-torrents/sync.log"
+SYNCED_HASHES="${HOME}/.local/share/rsync-torrents/synced-hashes"
+
+# --- idle shutdown ---
+TRANSMISSION_HOST=localhost
+TRANSMISSION_PORT=9091
+IDLE_THRESHOLD=1800   # seconds of inactivity before stopping the daemon (1800 = 30 min)
+STATE_FILE="${HOME}/.local/share/rsync-torrents/last-active"

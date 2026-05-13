@@ -1,0 +1,7 @@
+[Unit]
+Description=Clean up finished torrents and check for idle shutdown
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/transmission-watch.sh

@@ -1,0 +1,8 @@
+{
+    "download-dir": "/home/ervin/internet/torrents",
+    "ratio-limit": 5.0,
+    "ratio-limit-enabled": true,
+    "remote-session-enabled": false,
+    "script-torrent-done-enabled": true,
+    "script-torrent-done-filename": "/home/ervin/.local/bin/sync-torrent.sh"
+}

@@ -51,7 +51,16 @@ cp config.example ~/.config/rsync-torrents/config
 $EDITOR ~/.config/rsync-torrents/config
 ```
 
-Fill in `REMOTE_USER`, `REMOTE_HOST`, and the three `REMOTE_PATH_*` variables.
+Fill in at minimum:
+
+| Variable | Description |
+|---|---|
+| `REMOTE_USER` | SSH user on the server |
+| `REMOTE_HOST` | Server hostname or IP |
+| `REMOTE_GROUP` | Group that owns files on the server (e.g. `media`) |
+| `REMOTE_PATH_MOVIES` | Destination path for torrents labelled `movie` |
+| `REMOTE_PATH_SERIES` | Destination path for torrents labelled `series` |
+| `REMOTE_PATH_DEFAULT` | Fallback path when no recognised label is set |
 
 ### 3. Ensure passwordless SSH to the server
 

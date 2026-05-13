@@ -1,7 +1,7 @@
 [Unit]
 Description=Periodically check if transmission-daemon is idle
-BindsTo=transmission-daemon.service
-After=transmission-daemon.service
+BindsTo=transmission.service
+After=transmission.service
 
 [Timer]
 # Check every 5 minutes; with a 30-minute IDLE_THRESHOLD in config,

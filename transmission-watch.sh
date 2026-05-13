@@ -90,8 +90,6 @@ log "idle for ${idle_seconds}s (threshold ${IDLE_THRESHOLD}s)"
 
 if [[ "$idle_seconds" -ge "$IDLE_THRESHOLD" ]]; then
     log "stopping transmission-daemon"
-    systemctl --user stop transmission-daemon.service 2>/dev/null \
-        || systemctl stop transmission-daemon.service 2>/dev/null \
-        || true
+    systemctl stop transmission.service 2>/dev/null || true
     rm -f "$STATE_FILE"
 fi

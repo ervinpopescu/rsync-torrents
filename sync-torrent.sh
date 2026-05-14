@@ -48,7 +48,7 @@ rsync -avz \
     --chmod=Dg+rwxs,Fg+rw \
     -e "ssh ${SSH_OPTS[*]}" \
     "$SOURCE" \
-    "${REMOTE_USER}@${REMOTE_HOST}:${DEST}/"
+    "${REMOTE_USER}@${REMOTE_HOST}:${DEST}/" >> "$LOG_FILE" 2>&1
 
 # Record this torrent as synced so transmission-watch.sh can safely delete it
 # once seeding is complete.

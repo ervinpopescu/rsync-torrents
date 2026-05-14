@@ -14,5 +14,7 @@ SYNCED_HASHES="${HOME}/.local/share/rsync-torrents/synced-hashes"
 # --- idle shutdown ---
 TRANSMISSION_HOST=localhost
 TRANSMISSION_PORT=9091
+TRANSMISSION_USER=       # optional: set if transmission requires authentication
+TRANSMISSION_PASS=       # optional
 IDLE_THRESHOLD=1800   # seconds of inactivity before stopping the daemon (1800 = 30 min)
 STATE_FILE="${HOME}/.local/share/rsync-torrents/last-active"

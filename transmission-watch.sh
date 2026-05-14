@@ -11,6 +11,8 @@ source "$CONFIG"
 
 TRANSMISSION_HOST="${TRANSMISSION_HOST:-localhost}"
 TRANSMISSION_PORT="${TRANSMISSION_PORT:-9091}"
+TRANSMISSION_USER="${TRANSMISSION_USER:-}"
+TRANSMISSION_PASS="${TRANSMISSION_PASS:-}"
 IDLE_THRESHOLD="${IDLE_THRESHOLD:-1800}"
 STATE_FILE="${STATE_FILE:-${HOME}/.local/share/rsync-torrents/last-active}"
 SYNCED_HASHES="${SYNCED_HASHES:-${HOME}/.local/share/rsync-torrents/synced-hashes}"
@@ -19,12 +21,16 @@ mkdir -p "$(dirname "$LOG_FILE")" "$(dirname "$STATE_FILE")"
 touch "$SYNCED_HASHES" 2>/dev/null || true
 
 TR="${TRANSMISSION_HOST}:${TRANSMISSION_PORT}"
+TR_AUTH=()
+if [[ -n "$TRANSMISSION_USER" && -n "$TRANSMISSION_PASS" ]]; then
+    TR_AUTH=(-n "${TRANSMISSION_USER}:${TRANSMISSION_PASS}")
+fi
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] watch: $*" >> "$LOG_FILE"; }
 
 # Returns all torrent IDs (one per line), stripping the leading '*' on active ones.
 all_ids() {
-    transmission-remote "$TR" -l 2>/dev/null \
+    transmission-remote "$TR" "${TR_AUTH[@]}" -l 2>/dev/null \
         | awk 'NR>1 && !/^Sum:/ { gsub(/[*]/, "", $1); print $1 }'
 }
 
@@ -32,7 +38,7 @@ all_ids() {
 # the fields we care about (State, Hash).
 torrent_info() {
     local id="$1"
-    transmission-remote "$TR" -t "$id" -i 2>/dev/null \
+    transmission-remote "$TR" "${TR_AUTH[@]}" -t "$id" -i 2>/dev/null \
         | awk -F': ' '
             /^\s+State:/ { gsub(/^\s+/, "", $2); print "state=" $2 }
             /^\s+Hash:/  { gsub(/^\s+/, "", $2); print "hash="  $2 }
@@ -53,7 +59,7 @@ while IFS= read -r id; do
     grep -qF "$hash" "$SYNCED_HASHES" 2>/dev/null || continue
 
     log "removing id=${id} hash=${hash} (seeding done, already synced)"
-    if transmission-remote "$TR" -t "$id" --remove-and-delete 2>/dev/null; then
+    if transmission-remote "$TR" "${TR_AUTH[@]}" -t "$id" --remove-and-delete 2>/dev/null; then
         sed -i "/${hash}/d" "$SYNCED_HASHES"
         removed=$((removed + 1))
     fi
@@ -63,7 +69,7 @@ done < <(all_ids)
 
 # --- Step 2: idle-shutdown check ---
 # Count torrents still downloading or seeding.
-active=$(transmission-remote "$TR" -l 2>/dev/null \
+active=$(transmission-remote "$TR" "${TR_AUTH[@]}" -l 2>/dev/null \
     | awk 'NR>1 && !/^Sum:/ {
         for (i=1; i<=NF; i++) {
             if ($i ~ /^(Seeding|Downloading|Up|Down|Up&Down)$/) { count++; break }

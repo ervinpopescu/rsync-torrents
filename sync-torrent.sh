@@ -47,12 +47,12 @@ SSH_OPTS=(-o StrictHostKeyChecking=accept-new)
 [[ -n "${SSH_KEY:-}" ]] && SSH_OPTS+=(-i "$SSH_KEY")
 
 echo "Transferring files..."
-rsync -avz \
+rsync -avz --progress \
     --chown=:"${REMOTE_GROUP:-media}" \
     --chmod=Dg+rwxs,Fg+rw \
     -e "ssh ${SSH_OPTS[*]}" \
     "$SOURCE" \
-    "${REMOTE_USER}@${REMOTE_HOST}:${DEST}/" >> "$LOG_FILE" 2>&1
+    "${REMOTE_USER}@${REMOTE_HOST}:${DEST}/" | tee -a "$LOG_FILE"
 
 # Record this torrent as synced so transmission-watch.sh can safely delete it
 # once seeding is complete.

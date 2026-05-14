@@ -38,11 +38,15 @@ resolve_remote_path() {
 SOURCE="${TR_TORRENT_DIR}/${TR_TORRENT_NAME}"
 DEST="$(resolve_remote_path)"
 
+echo "Syncing torrent: ${TR_TORRENT_NAME}"
+echo "Logging to: ${LOG_FILE}"
+
 log "START torrent='${TR_TORRENT_NAME}' labels='${TR_TORRENT_LABELS:-}' dest='${DEST}'"
 
 SSH_OPTS=(-o StrictHostKeyChecking=accept-new)
 [[ -n "${SSH_KEY:-}" ]] && SSH_OPTS+=(-i "$SSH_KEY")
 
+echo "Transferring files..."
 rsync -avz \
     --chown=:"${REMOTE_GROUP:-media}" \
     --chmod=Dg+rwxs,Fg+rw \
@@ -55,3 +59,4 @@ rsync -avz \
 echo "${TR_TORRENT_HASH}" >> "$SYNCED_HASHES"
 
 log "DONE torrent='${TR_TORRENT_NAME}' hash='${TR_TORRENT_HASH}' synced and recorded"
+echo "Sync complete."

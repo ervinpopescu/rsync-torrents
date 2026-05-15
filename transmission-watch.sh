@@ -63,8 +63,12 @@ while IFS= read -r id; do
     [[ -n "$id" ]] || continue
 
     state="" hash=""
-    # shellcheck disable=SC1090
-    while IFS= read -r line; do eval "$line"; done < <(torrent_info "$id")
+    while IFS='=' read -r key value; do
+        case "$key" in
+            state) state="$value" ;;
+            hash)  hash="$value"  ;;
+        esac
+    done < <(torrent_info "$id")
 
     [[ "$state" == "Stopped" || "$state" == "Finished" ]] || continue
     [[ -n "$hash" ]] || continue

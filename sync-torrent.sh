@@ -51,12 +51,24 @@ SSH_OPTS=(-o StrictHostKeyChecking=accept-new)
 [[ -n "${SSH_KEY:-}" ]] && SSH_OPTS+=(-i "$SSH_KEY")
 
 echo "Transferring files..."
-rsync -avz --progress \
-    --chown=:"${REMOTE_GROUP:-media}" \
-    --chmod=Dg+rwxs,Fg+rw \
-    -e "ssh $(printf '%q ' "${SSH_OPTS[@]}")" \
-    "$SOURCE" \
-    "${REMOTE_USER}@${REMOTE_HOST}:$(printf '%q' "${DEST}/")" | tee -a "$LOG_FILE"
+rsync_rc=1
+for attempt in 1 2 3 4 5; do
+    rsync -avz --progress --partial \
+        --chown=:"${REMOTE_GROUP:-media}" \
+        --chmod=Dg+rwxs,Fg+rw \
+        -e "ssh $(printf '%q ' "${SSH_OPTS[@]}")" \
+        "$SOURCE" \
+        "${REMOTE_USER}@${REMOTE_HOST}:$(printf '%q' "${DEST}/")" | tee -a "$LOG_FILE"
+    rsync_rc=${PIPESTATUS[0]}
+    [[ "$rsync_rc" -eq 0 ]] && break
+    log "WARN rsync attempt ${attempt} failed (rc=${rsync_rc})"
+    [[ "$attempt" -lt 5 ]] && sleep $((attempt * 30))
+done
+
+if [[ "$rsync_rc" -ne 0 ]]; then
+    log "FAIL rsync failed after 5 attempts (rc=${rsync_rc}), not recording hash"
+    exit "$rsync_rc"
+fi
 
 # Record this torrent as synced so transmission-watch.sh can safely delete it
 # once seeding is complete.

@@ -76,7 +76,10 @@ while IFS= read -r id; do
 
     log "removing id=${id} hash=${hash} (seeding done, already synced)"
     if transmission-remote "$TR" "${TR_AUTH[@]}" -t "$id" --remove-and-delete 2>/dev/null; then
-        sed -i "/${hash}/d" "$SYNCED_HASHES"
+        (
+            flock -e 200
+            sed -i "/${hash}/d" "$SYNCED_HASHES"
+        ) 200>"${SYNCED_HASHES}.lock"
         removed=$((removed + 1))
     fi
 done < <(all_ids)

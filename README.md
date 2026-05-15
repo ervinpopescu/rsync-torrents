@@ -78,13 +78,14 @@ ssh-copy-id user@yourserver
 
 ### 5. Run transmission-daemon as your user
 
-Create a drop-in to override the default `User=transmission`:
+Create a drop-in to override the default `User=transmission`. This also ensures the daemon uses your user's configuration directory instead of the system default (`/var/lib/transmission-daemon`):
 
 ```bash
 sudo mkdir -p /etc/systemd/system/transmission-daemon.service.d
-sudo tee /etc/systemd/system/transmission-daemon.service.d/username.conf <<EOF
+sudo tee /etc/systemd/system/transmission-daemon.service.d/user.conf <<EOF
 [Service]
 User=$USER
+Environment=TRANSMISSION_HOME=$HOME/.config/transmission-daemon
 EOF
 sudo systemctl daemon-reload
 ```
@@ -108,7 +109,7 @@ Stop the daemon, merge the settings, then restart:
 
 ```bash
 sudo systemctl stop transmission-daemon.service
-# Manually merge transmission-settings.json into ~/.config/transmission/settings.json
+# Manually merge transmission-settings.json into ~/.config/transmission-daemon/settings.json
 sudo systemctl start transmission-daemon.service
 ```
 

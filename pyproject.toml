@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rsync-torrents"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "transmission-rpc>=7.0",
+    "filelock>=3.0",
+]
+
+[project.scripts]
+rsync-torrents = "rsync_torrents.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

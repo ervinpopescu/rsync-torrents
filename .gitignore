@@ -1,1 +1,24 @@
 .worktrees/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.env
+*.pth
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# type checkers
+.mypy_cache/
+.ruff_cache/

@@ -50,9 +50,9 @@ echo "Transferring files..."
 rsync -avz --progress \
     --chown=:"${REMOTE_GROUP:-media}" \
     --chmod=Dg+rwxs,Fg+rw \
-    -e "ssh ${SSH_OPTS[*]}" \
+    -e "ssh $(printf '%q ' "${SSH_OPTS[@]}")" \
     "$SOURCE" \
-    "${REMOTE_USER}@${REMOTE_HOST}:${DEST}/" | tee -a "$LOG_FILE"
+    "${REMOTE_USER}@${REMOTE_HOST}:$(printf '%q' "${DEST}/")" | tee -a "$LOG_FILE"
 
 # Record this torrent as synced so transmission-watch.sh can safely delete it
 # once seeding is complete.

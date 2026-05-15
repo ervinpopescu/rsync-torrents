@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Called every 5 minutes by transmission-watch.timer.
+# Called every 5 minutes by transmission-idle-shutdown.timer.
 # 1. Removes torrents that have finished seeding (Stopped) and are already synced.
 # 2. Removes files in each torrent's Location dir that don't belong to any known torrent.
 # 3. Shuts down transmission-daemon after IDLE_THRESHOLD seconds with no active torrents.

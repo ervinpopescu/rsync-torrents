@@ -91,13 +91,16 @@ sudo systemctl daemon-reload
 
 ### 6. Install and enable the idle-shutdown units
 
+The units must be system units so they can bind to and stop `transmission-daemon.service`. The service runs as your user (via `User=` in the unit file) so config and data paths resolve correctly.
+
 ```bash
+# Edit the User= line in transmission-idle-shutdown.service to match your username first
 sudo cp transmission-idle-shutdown.{service,timer} /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now transmission-idle-shutdown.timer
 ```
 
-If `rsync-torrents` is installed to `~/.local/bin` (pip `--user` or uv tool), ensure the service can find it — the unit already sets `Environment=PATH=/home/ervin/.local/bin:/usr/bin:/bin`. Adjust the username if needed.
+If `rsync-torrents` is installed to `~/.local/bin` (pip `--user` or uv tool), update the `Environment=PATH=` line in `transmission-idle-shutdown.service` to include your home directory before copying.
 
 ### 7. Apply Transmission settings
 

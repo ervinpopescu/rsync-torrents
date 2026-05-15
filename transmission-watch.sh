@@ -29,6 +29,10 @@ fi
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] watch: $*" >> "$LOG_FILE"; }
 
+LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/transmission-watch.lock"
+exec 9>"$LOCK_FILE"
+flock -n 9 || { log "already running, skipping"; exit 0; }
+
 # Returns all torrent IDs (one per line), stripping the leading '*' on active ones.
 all_ids() {
     transmission-remote "$TR" "${TR_AUTH[@]}" -l 2>/dev/null \

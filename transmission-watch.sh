@@ -92,6 +92,19 @@ done < <(all_ids)
 
 [[ "$removed" -gt 0 ]] && log "removed ${removed} finished torrent(s)"
 
+# Prune hashes from SYNCED_HASHES that are no longer in Transmission, preventing stale
+# entries from matching re-added torrents and triggering premature deletion.
+if current_hashes=$(transmission-remote "$TR" "${TR_AUTH[@]}" -t all -i 2>/dev/null \
+        | awk '/^\s+Hash:/ { sub(/^\s+Hash:\s*/, ""); print }') \
+    && [[ -n "$current_hashes" ]]; then
+    (
+        flock -x 9
+        grep -xF -f <(printf '%s\n' "$current_hashes") "$SYNCED_HASHES" \
+            > "$SYNCED_HASHES.tmp" 2>/dev/null || true
+        mv "$SYNCED_HASHES.tmp" "$SYNCED_HASHES"
+    ) 9>>"$SYNCED_HASHES.lock"
+fi
+
 # --- Step 2: remove orphaned files from torrent location dirs ---
 if ! tr_list=$(transmission-remote "$TR" "${TR_AUTH[@]}" -l 2>/dev/null); then
     log "ERROR: transmission-remote -l failed. Skipping orphan cleanup."

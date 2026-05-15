@@ -56,7 +56,10 @@ rsync -avz --progress \
 
 # Record this torrent as synced so transmission-watch.sh can safely delete it
 # once seeding is complete.
-echo "${TR_TORRENT_HASH}" >> "$SYNCED_HASHES"
+(
+    flock -e 200
+    echo "${TR_TORRENT_HASH}" >> "$SYNCED_HASHES"
+) 200>"${SYNCED_HASHES}.lock"
 
 log "DONE torrent='${TR_TORRENT_NAME}' hash='${TR_TORRENT_HASH}' synced and recorded"
 echo "Sync complete."

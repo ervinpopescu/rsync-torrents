@@ -10,6 +10,8 @@ CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/rsync-torrents/config"
 # shellcheck source=/dev/null
 source "$CONFIG"
 
+[[ -n "${LOG_FILE:-}" ]] || { echo "Missing required config variable: LOG_FILE" >&2; exit 1; }
+
 TRANSMISSION_HOST="${TRANSMISSION_HOST:-localhost}"
 TRANSMISSION_PORT="${TRANSMISSION_PORT:-9091}"
 TRANSMISSION_USER="${TRANSMISSION_USER:-}"

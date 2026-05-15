@@ -94,8 +94,8 @@ sudo systemctl daemon-reload
 The units must be system units so they can bind to and stop `transmission-daemon.service`. The service runs as your user (via `User=` in the unit file) so config and data paths resolve correctly.
 
 ```bash
-# Edit the User= line in transmission-idle-shutdown.service to match your username first
-sudo cp transmission-idle-shutdown.{service,timer} /etc/systemd/system/
+sed -e "s|@USER@|$USER|g" -e "s|@BINDIR@|$HOME/.local/bin|g" transmission-idle-shutdown.service | sudo tee /etc/systemd/system/transmission-idle-shutdown.service > /dev/null
+sudo cp transmission-idle-shutdown.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now transmission-idle-shutdown.timer
 ```

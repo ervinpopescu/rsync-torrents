@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Called every 5 minutes by transmission-watch.timer.
 # 1. Removes torrents that have finished seeding (Stopped) and are already synced.
-# 2. Shuts down transmission-daemon after IDLE_THRESHOLD seconds with no active torrents.
+# 2. Removes files in each torrent's Location dir that don't belong to any known torrent.
+# 3. Shuts down transmission-daemon after IDLE_THRESHOLD seconds with no active torrents.
 set -euo pipefail
 
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/rsync-torrents/config"
@@ -45,6 +46,17 @@ torrent_info() {
         '
 }
 
+# Prints "location<TAB>location/name" for every known torrent.
+# Used to build both the set of known paths and the set of dirs to scan.
+all_torrent_paths() {
+    transmission-remote "$TR" "${TR_AUTH[@]}" -t all -i 2>/dev/null \
+        | awk '
+            /^\s+Name:/     { sub(/^\s+Name:\s*/, "");     name = $0 }
+            /^\s+Location:/ { sub(/^\s+Location:\s*/, ""); sub(/\/+$/, "", $0); loc = $0 }
+            loc != "" && name != "" { print loc "\t" loc "/" name; loc = ""; name = "" }
+        '
+}
+
 # --- Step 1: remove stopped torrents whose files are already on the server ---
 removed=0
 while IFS= read -r id; do
@@ -67,7 +79,33 @@ done < <(all_ids)
 
 [[ "$removed" -gt 0 ]] && log "removed ${removed} finished torrent(s)"
 
-# --- Step 2: idle-shutdown check ---
+# --- Step 2: remove orphaned files from torrent location dirs ---
+declare -A known=()
+declare -A scan_dirs=()
+while IFS=$'\t' read -r loc path; do
+    [[ -n "$path" ]] && known["$path"]=1
+    [[ -n "$loc"  ]] && scan_dirs["$loc"]=1
+done < <(all_torrent_paths)
+
+if [[ "${#scan_dirs[@]}" -gt 0 ]]; then
+    orphans=0
+    for dir in "${!scan_dirs[@]}"; do
+        [[ -d "$dir" ]] || continue
+        while IFS= read -r -d '' item; do
+            if [[ -z "${known[$item]+x}" ]]; then
+                log "removing orphan: $item"
+                if rm -rf -- "$item" 2>/dev/null; then
+                    orphans=$((orphans + 1))
+                else
+                    log "WARN failed to remove: $item"
+                fi
+            fi
+        done < <(find "$dir" -maxdepth 1 -mindepth 1 -print0)
+    done
+    [[ "$orphans" -gt 0 ]] && log "removed ${orphans} orphaned item(s)"
+fi
+
+# --- Step 3: idle-shutdown check ---
 # Count torrents still downloading or seeding.
 active=$(transmission-remote "$TR" "${TR_AUTH[@]}" -l 2>/dev/null \
     | awk 'NR>1 && !/^Sum:/ {

@@ -3,21 +3,20 @@
 Full workflow:
 
 1. **Download** — Transmission downloads the torrent to `~/internet/torrents`
-2. **Sync** — on completion, `sync-torrent.sh` rsyncs it to the server (routed by label: movie/series) and records the hash
+2. **Sync** — on completion, `rsync-torrents sync` rsyncs it to the server (routed by label: movie/series) and records the hash
 3. **Seed** — Transmission continues seeding until ratio 5.0 is reached, then marks the torrent Stopped
-4. **Cleanup** — `transmission-watch.sh` (timer, every 5 min) detects Stopped+synced torrents, deletes local files, and removes them from the queue
+4. **Cleanup** — `rsync-torrents watch` (timer, every 5 min) detects Stopped+synced torrents, deletes local files, and removes them from the queue
 5. **Shutdown** — once no torrents are active for 30 minutes, the daemon stops
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `sync-torrent.sh` | Transmission done-script: rsync + record hash |
-| `transmission-watch.sh` | Timer script: cleanup finished torrents + idle shutdown |
-| `transmission-idle-shutdown.service` | Systemd oneshot service running the watch script |
+| `rsync_torrents/` | Python package |
+| `transmission-idle-shutdown.service` | Systemd oneshot service running `rsync-torrents watch` |
 | `transmission-idle-shutdown.timer` | Systemd timer (every 5 min, bound to `transmission-daemon.service`) |
 | `transmission-settings.json` | Transmission settings to apply (reference/diff) |
-| `config.example` | Template config — copy to `~/.config/rsync-torrents/config` |
+| `config.example.toml` | Annotated config template — copy to `~/.config/rsync-torrents/config.toml` |
 
 ## Remote server setup
 
@@ -37,42 +36,44 @@ chmod 2775 /path/to/movies /path/to/series
 
 ## Local setup
 
-### 1. Create download directories
+### 1. Install the package
+
+```bash
+pip install --user .
+# or with uv:
+uv tool install .
+```
+
+### 2. Create download directories
 
 ```bash
 mkdir -p ~/internet/torrents/movies ~/internet/torrents/series
 ```
 
-### 2. Create config
+### 3. Create config
 
 ```bash
 mkdir -p ~/.config/rsync-torrents
-cp config.example ~/.config/rsync-torrents/config
-$EDITOR ~/.config/rsync-torrents/config
+cp config.example.toml ~/.config/rsync-torrents/config.toml
+$EDITOR ~/.config/rsync-torrents/config.toml
 ```
 
 Fill in at minimum:
 
-| Variable | Description |
+| Key | Description |
 |---|---|
-| `REMOTE_USER` | SSH user on the server |
-| `REMOTE_HOST` | Server hostname or IP |
-| `REMOTE_GROUP` | Group that owns files on the server (e.g. `media`) |
-| `REMOTE_PATH_MOVIES` | Destination path for torrents labelled `movie` |
-| `REMOTE_PATH_SERIES` | Destination path for torrents labelled `series` |
-| `REMOTE_PATH_DEFAULT` | Fallback path when no recognised label is set |
+| `remote.user` | SSH user on the server |
+| `remote.host` | Server hostname or IP |
+| `remote.group` | Group that owns files on the server (e.g. `media`) |
+| `paths.movies` | Destination path for torrents labelled `movie` |
+| `paths.series` | Destination path for torrents labelled `series` |
+| `paths.default` | Fallback path when no recognised label is set |
 
-### 3. Ensure passwordless SSH to the server
+### 4. Ensure passwordless SSH to the server
 
 ```bash
 ssh-copy-id user@yourserver
-```
-
-### 4. Install scripts
-
-```bash
-install -m 755 sync-torrent.sh ~/.local/bin/sync-torrent.sh
-install -m 755 transmission-watch.sh ~/.local/bin/transmission-watch.sh
+# or set remote.ssh_key in config.toml to point at an identity file
 ```
 
 ### 5. Run transmission-daemon as your user
@@ -90,13 +91,13 @@ sudo systemctl daemon-reload
 
 ### 6. Install and enable the idle-shutdown units
 
-These must be system units so they can bind to and stop `transmission-daemon.service`:
-
 ```bash
 sudo cp transmission-idle-shutdown.{service,timer} /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now transmission-idle-shutdown.timer
 ```
+
+If `rsync-torrents` is installed to `~/.local/bin` (pip `--user` or uv tool), ensure the service can find it — the unit already sets `Environment=PATH=/home/ervin/.local/bin:/usr/bin:/bin`. Adjust the username if needed.
 
 ### 7. Apply Transmission settings
 
@@ -116,8 +117,19 @@ Key settings applied:
 | `ratio-limit` | 5.0 |
 | `ratio-limit-enabled` | true |
 | `script-torrent-done-enabled` | true |
-| `script-torrent-done-filename` | `~/.local/bin/sync-torrent.sh` |
-| `remote-session-enabled` | false |
+| `script-torrent-done-filename` | path to a wrapper that calls `rsync-torrents sync` |
+
+Because Transmission's done-script field doesn't support arguments, create a one-line wrapper:
+
+```bash
+cat > ~/.local/bin/torrent-sync-hook <<'EOF'
+#!/bin/sh
+exec rsync-torrents sync
+EOF
+chmod +x ~/.local/bin/torrent-sync-hook
+```
+
+Then set `script-torrent-done-filename` to `~/.local/bin/torrent-sync-hook`.
 
 ### 8. Enable transmission-daemon
 
@@ -131,38 +143,51 @@ Set the label before or after adding a torrent:
 
 | Label | Remote destination |
 |---|---|
-| `movie`, `movies` | `REMOTE_PATH_MOVIES` |
-| `serie`, `series`, `show`, `shows`, `tv` | `REMOTE_PATH_SERIES` |
-| anything else / none | `REMOTE_PATH_DEFAULT` |
+| `movie`, `movies` | `paths.movies` |
+| `serie`, `series`, `show`, `shows`, `tv` | `paths.series` |
+| anything else / none | `paths.default` |
 
 ## Testing
 
-**Test the sync script manually:**
+**Test sync manually:**
 
 ```bash
 TR_TORRENT_DIR=~/internet/torrents \
 TR_TORRENT_NAME=test-file \
 TR_TORRENT_HASH=abc123 \
 TR_TORRENT_LABELS=movie \
-~/.local/bin/sync-torrent.sh
+rsync-torrents sync
 
 tail -f ~/.local/share/rsync-torrents/sync.log
 ```
 
 Verify the file arrived on the server with `media` group ownership.
 
-**Test the watch script manually:**
+**Test watch manually:**
+
+```bash
+rsync-torrents watch
+tail -f ~/.local/share/rsync-torrents/sync.log
+```
+
+Or via systemd:
 
 ```bash
 sudo systemctl start transmission-idle-shutdown.service
 journalctl -u transmission-idle-shutdown.service
 ```
 
+**Run the test suite:**
+
+```bash
+uv run pytest -v
+```
+
 ## How the cleanup works
 
-`sync-torrent.sh` appends the torrent's info hash to `~/.local/share/rsync-torrents/synced-hashes` after a successful rsync. The watch script checks every Stopped torrent against that list. If the hash is present, it calls `transmission-remote --remove-and-delete`, then removes the hash from the list.
+`rsync-torrents sync` appends the torrent's info hash to `~/.local/share/rsync-torrents/synced-hashes` after a successful rsync. The watch command checks every Stopped torrent against that list via Transmission's JSON-RPC API. If the hash is present, it removes the torrent and its data, then reconciles the hash file against the current torrent list to prune any stale entries.
 
-If rsync fails, the hash is never recorded — the watch script leaves the torrent alone so you can investigate and re-run manually.
+If rsync fails (after all retries), the hash is never recorded — the watch command leaves the torrent alone so you can investigate and re-run manually.
 
 ## Transmission environment variables (done-script)
 

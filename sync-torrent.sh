@@ -6,6 +6,10 @@ CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/rsync-torrents/config"
 # shellcheck source=/dev/null
 source "$CONFIG"
 
+for _var in REMOTE_USER REMOTE_HOST REMOTE_PATH_DEFAULT REMOTE_PATH_MOVIES REMOTE_PATH_SERIES LOG_FILE SYNCED_HASHES; do
+    [[ -n "${!_var:-}" ]] || { echo "Missing required config variable: $_var" >&2; exit 1; }
+done
+
 # Required config variables:
 #   REMOTE_USER, REMOTE_HOST
 #   REMOTE_PATH_MOVIES, REMOTE_PATH_SERIES, REMOTE_PATH_DEFAULT

@@ -8,6 +8,14 @@ Full workflow:
 4. **Cleanup** — `rsync-torrents watch` (timer, every 5 min) detects Stopped+synced torrents, deletes local files, and removes them from the queue
 5. **Shutdown** — once no torrents are active for 30 minutes, the daemon stops
 
+## Prerequisites
+
+The following software is required on the local machine:
+- `transmission-daemon`
+- `transmission-remote` (typically part of the `transmission-cli` package)
+- `rsync`
+- `ssh`
+
 ## Files
 
 | File | Purpose |

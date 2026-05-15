@@ -1,6 +1,6 @@
 [Unit]
 Description=Clean up finished torrents and check for idle shutdown
-After=network.target
+After=network.target transmission-daemon.service
 
 [Service]
 Type=oneshot

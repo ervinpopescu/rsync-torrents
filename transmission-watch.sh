@@ -54,7 +54,7 @@ while IFS= read -r id; do
     # shellcheck disable=SC1090
     while IFS= read -r line; do eval "$line"; done < <(torrent_info "$id")
 
-    [[ "$state" == "Stopped" ]] || continue
+    [[ "$state" == "Stopped" || "$state" == "Finished" ]] || continue
     [[ -n "$hash" ]] || continue
     grep -qF "$hash" "$SYNCED_HASHES" 2>/dev/null || continue
 

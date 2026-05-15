@@ -4,5 +4,5 @@
   "ratio-limit-enabled": true,
   "remote-session-enabled": false,
   "script-torrent-done-enabled": true,
-  "script-torrent-done-filename": "/path/to/home/.local/bin/sync-torrent.sh"
+  "script-torrent-done-filename": "/path/to/home/.local/bin/torrent-sync-hook"
 }

@@ -87,29 +87,41 @@ done < <(all_ids)
 [[ "$removed" -gt 0 ]] && log "removed ${removed} finished torrent(s)"
 
 # --- Step 2: remove orphaned files from torrent location dirs ---
-declare -A known=()
-declare -A scan_dirs=()
-while IFS=$'\t' read -r loc path; do
-    [[ -n "$path" ]] && known["$path"]=1
-    [[ -n "$loc"  ]] && scan_dirs["$loc"]=1
-done < <(all_torrent_paths)
+if ! tr_list=$(transmission-remote "$TR" "${TR_AUTH[@]}" -l 2>/dev/null); then
+    log "ERROR: transmission-remote -l failed. Skipping orphan cleanup."
+else
+    expected_count=$(echo "$tr_list" | awk 'NR>1 && !/^Sum:/ { count++ } END { print count+0 }')
 
-if [[ "${#scan_dirs[@]}" -gt 0 ]]; then
-    orphans=0
-    for dir in "${!scan_dirs[@]}"; do
-        [[ -d "$dir" ]] || continue
-        while IFS= read -r -d '' item; do
-            if [[ -z "${known[$item]+x}" ]]; then
-                log "removing orphan: $item"
-                if rm -rf -- "$item" 2>/dev/null; then
-                    orphans=$((orphans + 1))
-                else
-                    log "WARN failed to remove: $item"
+    declare -A known=()
+    declare -A scan_dirs=()
+    actual_count=0
+    while IFS=$'\t' read -r loc path; do
+        if [[ -n "$path" ]]; then
+            known["$path"]=1
+            actual_count=$((actual_count + 1))
+        fi
+        [[ -n "$loc"  ]] && scan_dirs["$loc"]=1
+    done < <(all_torrent_paths)
+
+    if [[ "$actual_count" -lt "$expected_count" ]]; then
+        log "ERROR: Incomplete torrent data (expected $expected_count, got $actual_count). Skipping orphan cleanup to prevent data loss."
+    elif [[ "${#scan_dirs[@]}" -gt 0 ]]; then
+        orphans=0
+        for dir in "${!scan_dirs[@]}"; do
+            [[ -d "$dir" ]] || continue
+            while IFS= read -r -d '' item; do
+                if [[ -z "${known[$item]+x}" ]]; then
+                    log "removing orphan: $item"
+                    if rm -rf -- "$item" 2>/dev/null; then
+                        orphans=$((orphans + 1))
+                    else
+                        log "WARN failed to remove: $item"
+                    fi
                 fi
-            fi
-        done < <(find "$dir" -maxdepth 1 -mindepth 1 -print0)
-    done
-    [[ "$orphans" -gt 0 ]] && log "removed ${orphans} orphaned item(s)"
+            done < <(find "$dir" -maxdepth 1 -mindepth 1 -print0)
+        done
+        [[ "$orphans" -gt 0 ]] && log "removed ${orphans} orphaned item(s)"
+    fi
 fi
 
 # --- Step 3: idle-shutdown check ---

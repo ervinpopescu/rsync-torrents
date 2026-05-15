@@ -5,7 +5,8 @@ After=network.target transmission-daemon.service
 [Service]
 Type=oneshot
 User=ervin
-ExecStart=/home/ervin/.local/bin/transmission-watch.sh
+ExecStart=/home/ervin/.local/bin/rsync-torrents watch
+Environment=PATH=/home/ervin/.local/bin:/usr/bin:/bin
 ProtectSystem=full
 PrivateTmp=true
 NoNewPrivileges=true
@@ -13,3 +14,5 @@ ProtectControlGroups=true
 ProtectKernelModules=true
 ProtectKernelTunables=true
 RestrictRealtime=true
+StandardOutput=journal
+StandardError=journal

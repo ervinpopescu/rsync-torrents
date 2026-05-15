@@ -1,0 +1,32 @@
+# config.example.toml — copy to ~/.config/rsync-torrents/config.toml and edit.
+
+[remote]
+user = "myuser"
+host = "myserver.example.com"
+group = "media"           # files on the server are chowned to this group
+ssh_key = ""              # path to identity file; leave empty for ssh-agent
+
+[paths]
+movies  = "/mnt/storage/movies"
+series  = "/mnt/storage/series"
+default = "/mnt/storage/unsorted"  # fallback when no recognised label is set
+
+[log]
+file         = "~/.local/share/rsync-torrents/sync.log"
+max_bytes    = 10485760   # 10 MB per log file
+backup_count = 3          # keep 3 rotated files
+
+[state]
+synced_hashes = "~/.local/share/rsync-torrents/synced-hashes"
+
+[transmission]
+host            = "localhost"
+port            = 9091
+username        = ""      # leave empty if Transmission has no RPC auth
+password        = ""
+idle_threshold  = 1800    # seconds idle before stopping daemon (1800 = 30 min)
+state_file      = "~/.local/share/rsync-torrents/last-active"
+
+[sync]
+retry_attempts = 5
+retry_backoff  = 30       # wait retry_backoff × attempt_number seconds between retries

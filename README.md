@@ -121,6 +121,7 @@ Key settings applied:
 | `ratio-limit-enabled` | true |
 | `script-torrent-done-enabled` | true |
 | `script-torrent-done-filename` | path to a wrapper that calls `rsync-torrents sync` |
+| `rpc-authentication-required` | `true` (required when setting `transmission.username`/`password` in config) |
 
 Because Transmission's done-script field doesn't support arguments, create a one-line wrapper:
 

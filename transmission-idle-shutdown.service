@@ -1,13 +1,16 @@
 [Unit]
 Description=Clean up finished torrents and check for idle shutdown
 After=network.target transmission-daemon.service
+Wants=transmission-daemon.service
 
 [Service]
 Type=oneshot
-User=ervin
-ExecStart=/home/ervin/.local/bin/rsync-torrents watch
-Environment=PATH=/home/ervin/.local/bin:/usr/bin:/bin
+User=@USER@
+ExecStart=@BINDIR@/rsync-torrents watch
+Environment=PATH=@BINDIR@:/usr/bin:/bin
+TimeoutStartSec=120
 ProtectSystem=full
+ProtectHome=true
 PrivateTmp=true
 NoNewPrivileges=true
 ProtectControlGroups=true

@@ -20,4 +20,6 @@ def configure_logging(cfg: Config) -> None:
             datefmt="%Y-%m-%d %H:%M:%S",
         )
     )
-    logging.basicConfig(level=logging.INFO, handlers=[handler])
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.addHandler(handler)

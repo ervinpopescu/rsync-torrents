@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import logging
 import shlex
 import subprocess
@@ -27,10 +28,14 @@ def run_rsync(
 ) -> None:
     ssh_cmd = build_ssh_command(ssh_key)
     cmd = [
-        "rsync", "-avz", "--progress", "--partial",
+        "rsync",
+        "-avz",
+        "--progress",
+        "--partial",
         f"--chown=:{remote_group}",
         "--chmod=Dg+rwxs,Fg+rw",
-        "-e", ssh_cmd,
+        "-e",
+        ssh_cmd,
         str(source),
         f"{remote_user}@{remote_host}:{remote_dest}/",
     ]
@@ -44,7 +49,9 @@ def run_rsync(
             result = subprocess.run(cmd, stdout=stdout, stderr=subprocess.STDOUT)
             if result.returncode == 0:
                 return
-            logging.warning("rsync attempt %d/%d failed (rc=%d)", attempt, retry_attempts, result.returncode)
+            logging.warning(
+                "rsync attempt %d/%d failed (rc=%d)", attempt, retry_attempts, result.returncode
+            )
             if attempt < retry_attempts:
                 time.sleep(attempt * retry_backoff)
     finally:

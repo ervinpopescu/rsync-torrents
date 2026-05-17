@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import logging
 import shutil
 import subprocess
@@ -11,8 +12,17 @@ from .config import Config
 from .hashes import load_hashes, reconcile_hashes
 
 _ACTIVE_STATUSES = {
-    "downloading", "seeding", "seed_wait", "download_wait", "check", "check_wait",
-    "download", "seed", "check wait", "download wait", "seed wait",
+    "downloading",
+    "seeding",
+    "seed_wait",
+    "download_wait",
+    "check",
+    "check_wait",
+    "download",
+    "seed",
+    "check wait",
+    "download wait",
+    "seed wait",
 }
 
 

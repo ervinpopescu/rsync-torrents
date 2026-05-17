@@ -1,6 +1,6 @@
-import textwrap
 import pytest
-from rsync_torrents.config import load_config, Config
+
+from rsync_torrents.config import Config, load_config
 
 
 def test_load_valid_config(tmp_config):

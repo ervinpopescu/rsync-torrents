@@ -1,12 +1,12 @@
 import time
-from pathlib import Path
-import pytest
-from rsync_torrents.hashes import save_hashes, load_hashes
+
+from rsync_torrents.hashes import load_hashes, save_hashes
 from rsync_torrents.watch import run_watch
 
 
 def _cfg(tmp_config_path, mocker):
     from rsync_torrents.config import load_config
+
     return load_config(tmp_config_path)
 
 
@@ -21,6 +21,7 @@ def _torrent(mocker, *, hash_string, name="Torrent", status="seed", download_dir
 
 
 # ── step 1: removal ───────────────────────────────────────────────────────────
+
 
 def test_removes_stopped_synced_torrent(tmp_config, tmp_hashes, mocker):
     save_hashes(tmp_hashes, {"abc123"})
@@ -81,6 +82,7 @@ def test_reconciles_stale_hash_after_removal(tmp_config, tmp_hashes, mocker):
 
 # ── step 2: orphan cleanup ────────────────────────────────────────────────────
 
+
 def test_removes_orphan_file(tmp_config, tmp_hashes, tmp_path, mocker):
     dl_dir = tmp_path / "downloads"
     dl_dir.mkdir()
@@ -89,8 +91,9 @@ def test_removes_orphan_file(tmp_config, tmp_hashes, tmp_path, mocker):
     orphan = dl_dir / "OrphanFile.mkv"
     orphan.touch()
 
-    torrent = _torrent(mocker, hash_string="abc", name="KnownTorrent",
-                       status="seed", download_dir=dl_dir)
+    torrent = _torrent(
+        mocker, hash_string="abc", name="KnownTorrent", status="seed", download_dir=dl_dir
+    )
     client = mocker.MagicMock()
     client.get_torrents.return_value = [torrent]
     mocker.patch("transmission_rpc.Client", return_value=client)
@@ -109,8 +112,9 @@ def test_keeps_known_torrent_dir(tmp_config, tmp_hashes, tmp_path, mocker):
     known = dl_dir / "KnownTorrent"
     known.mkdir()
 
-    torrent = _torrent(mocker, hash_string="abc", name="KnownTorrent",
-                       status="seed", download_dir=dl_dir)
+    torrent = _torrent(
+        mocker, hash_string="abc", name="KnownTorrent", status="seed", download_dir=dl_dir
+    )
     client = mocker.MagicMock()
     client.get_torrents.return_value = [torrent]
     mocker.patch("transmission_rpc.Client", return_value=client)
@@ -123,6 +127,7 @@ def test_keeps_known_torrent_dir(tmp_config, tmp_hashes, tmp_path, mocker):
 
 
 # ── step 3: idle shutdown ─────────────────────────────────────────────────────
+
 
 def test_resets_idle_clock_when_active(tmp_config, tmp_hashes, tmp_path, mocker):
     torrent = _torrent(mocker, hash_string="abc", status="seed")

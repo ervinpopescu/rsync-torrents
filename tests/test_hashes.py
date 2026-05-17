@@ -1,4 +1,4 @@
-from rsync_torrents.hashes import load_hashes, save_hashes, reconcile_hashes
+from rsync_torrents.hashes import load_hashes, reconcile_hashes, save_hashes
 
 
 def test_load_empty(tmp_hashes):

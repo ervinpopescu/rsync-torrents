@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import argparse
 import fcntl
 import logging
@@ -73,10 +74,15 @@ def cmd_watch(args) -> None:
 
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(prog="rsync-torrents")
-    parser.add_argument("-c", "--config", type=Path, default=None,
-                        help="Path to config.toml (default: XDG_CONFIG_HOME/rsync-torrents/config.toml)")
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=Path,
+        default=None,
+        help="Path to config.toml (default: XDG_CONFIG_HOME/rsync-torrents/config.toml)",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("sync",  help="Sync a completed torrent (Transmission hook)")
+    sub.add_parser("sync", help="Sync a completed torrent (Transmission hook)")
     sub.add_parser("watch", help="Watch loop: remove finished, clean orphans, idle-shutdown")
 
     args = parser.parse_args(argv)

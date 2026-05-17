@@ -1,5 +1,5 @@
 import textwrap
-from pathlib import Path
+
 import pytest
 
 
@@ -7,7 +7,8 @@ import pytest
 def tmp_config(tmp_path):
     """Write a minimal valid TOML config and return its path."""
     cfg = tmp_path / "config.toml"
-    cfg.write_text(textwrap.dedent("""\
+    cfg.write_text(
+        textwrap.dedent("""\
         [remote]
         user = "testuser"
         host = "testhost"
@@ -25,9 +26,10 @@ def tmp_config(tmp_path):
         [state]
         synced_hashes = "{hashes}"
     """).format(
-        log=str(tmp_path / "sync.log"),
-        hashes=str(tmp_path / "synced-hashes"),
-    ))
+            log=str(tmp_path / "sync.log"),
+            hashes=str(tmp_path / "synced-hashes"),
+        )
+    )
     return cfg
 
 

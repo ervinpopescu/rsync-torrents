@@ -1,4 +1,5 @@
 import pytest
+
 from rsync_torrents.rsync_util import build_ssh_command, run_rsync
 
 
@@ -19,8 +20,11 @@ def test_run_rsync_success(mocker):
     mock_run = mocker.patch("subprocess.run", return_value=mocker.Mock(returncode=0))
     run_rsync(
         source="/src/file",
-        remote_user="user", remote_host="host", remote_dest="/dst",
-        remote_group="media", ssh_key="",
+        remote_user="user",
+        remote_host="host",
+        remote_dest="/dst",
+        remote_group="media",
+        ssh_key="",
     )
     assert mock_run.call_count == 1
 
@@ -37,9 +41,13 @@ def test_run_rsync_retries_on_failure(mocker):
     mock_sleep = mocker.patch("time.sleep")
     run_rsync(
         source="/src/file",
-        remote_user="user", remote_host="host", remote_dest="/dst",
-        remote_group="media", ssh_key="",
-        retry_attempts=5, retry_backoff=1,
+        remote_user="user",
+        remote_host="host",
+        remote_dest="/dst",
+        remote_group="media",
+        ssh_key="",
+        retry_attempts=5,
+        retry_backoff=1,
     )
     assert mock_run.call_count == 3
     assert mock_sleep.call_count == 2
@@ -51,17 +59,25 @@ def test_run_rsync_raises_after_exhausting_retries(mocker):
     with pytest.raises(RuntimeError, match="failed after 3 attempts"):
         run_rsync(
             source="/src/file",
-            remote_user="u", remote_host="h", remote_dest="/d",
-            remote_group="media", ssh_key="",
-            retry_attempts=3, retry_backoff=1,
+            remote_user="u",
+            remote_host="h",
+            remote_dest="/d",
+            remote_group="media",
+            ssh_key="",
+            retry_attempts=3,
+            retry_backoff=1,
         )
 
 
 def test_run_rsync_uses_partial_flag(mocker):
     mock_run = mocker.patch("subprocess.run", return_value=mocker.Mock(returncode=0))
     run_rsync(
-        source="/src", remote_user="u", remote_host="h",
-        remote_dest="/d", remote_group="media", ssh_key="",
+        source="/src",
+        remote_user="u",
+        remote_host="h",
+        remote_dest="/d",
+        remote_group="media",
+        ssh_key="",
     )
     cmd = mock_run.call_args[0][0]
     assert "--partial" in cmd

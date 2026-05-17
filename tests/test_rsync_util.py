@@ -91,3 +91,33 @@ def test_run_rsync_uses_partial_flag(mocker):
     )
     cmd = mock_run.call_args[0][0]
     assert "--partial" in cmd
+
+
+def test_run_rsync_dry_run_appends_flag(mocker):
+    mock_run = mocker.patch("subprocess.run", return_value=mocker.Mock(returncode=0))
+    run_rsync(
+        source="/src",
+        remote_user="u",
+        remote_host="h",
+        remote_dest="/d",
+        remote_group="media",
+        ssh_key="",
+        dry_run=True,
+    )
+    cmd = mock_run.call_args[0][0]
+    assert "--dry-run" in cmd
+
+
+def test_run_rsync_writes_to_log_file(mocker, tmp_path):
+    mocker.patch("subprocess.run", return_value=mocker.Mock(returncode=0))
+    log_file = tmp_path / "subdir" / "rsync.log"
+    run_rsync(
+        source="/src",
+        remote_user="u",
+        remote_host="h",
+        remote_dest="/d",
+        remote_group="media",
+        ssh_key="",
+        log_file=log_file,
+    )
+    assert log_file.parent.exists()

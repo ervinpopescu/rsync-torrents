@@ -8,7 +8,11 @@ from pathlib import Path
 
 
 def build_ssh_command(ssh_key: str, strict_host_key_checking: bool = False) -> str:
-    hk_value = "StrictHostKeyChecking=yes" if strict_host_key_checking else "StrictHostKeyChecking=accept-new"
+    hk_value = (
+        "StrictHostKeyChecking=yes"
+        if strict_host_key_checking
+        else "StrictHostKeyChecking=accept-new"
+    )
     opts = ["-o", hk_value]
     if ssh_key:
         opts += ["-i", ssh_key]
@@ -44,7 +48,9 @@ def run_rsync(
     ]
     if dry_run:
         cmd.append("--dry-run")
-        logging.info("DRY-RUN: would rsync %s -> %s@%s:%s/", source, remote_user, remote_host, remote_dest)
+        logging.info(
+            "DRY-RUN: would rsync %s -> %s@%s:%s/", source, remote_user, remote_host, remote_dest
+        )
     stdout = None
     if log_file:
         log_file = Path(log_file)

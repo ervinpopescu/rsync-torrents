@@ -88,9 +88,15 @@ def main(argv=None) -> None:
     )
     sub = parser.add_subparsers(dest="command", required=True)
     sync_parser = sub.add_parser("sync", help="Sync a completed torrent (Transmission hook)")
-    sync_parser.add_argument("--dry-run", action="store_true", help="Log what would happen without making changes")
-    watch_parser = sub.add_parser("watch", help="Watch loop: remove finished, clean orphans, idle-shutdown")
-    watch_parser.add_argument("--dry-run", action="store_true", help="Log what would happen without making changes")
+    sync_parser.add_argument(
+        "--dry-run", action="store_true", help="Log what would happen without making changes"
+    )
+    watch_parser = sub.add_parser(
+        "watch", help="Watch loop: remove finished, clean orphans, idle-shutdown"
+    )
+    watch_parser.add_argument(
+        "--dry-run", action="store_true", help="Log what would happen without making changes"
+    )
 
     args = parser.parse_args(argv)
     if args.config is None:

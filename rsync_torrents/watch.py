@@ -63,7 +63,9 @@ def run_watch(cfg: Config, dry_run: bool = False) -> None:
         if torrent.hash_string not in synced:
             continue
         if dry_run:
-            logging.info("DRY-RUN: would remove torrent %s (hash=%s)", torrent.name, torrent.hash_string)
+            logging.info(
+                "DRY-RUN: would remove torrent %s (hash=%s)", torrent.name, torrent.hash_string
+            )
             continue
         logging.info("Removing %s (hash=%s)", torrent.name, torrent.hash_string)
         try:

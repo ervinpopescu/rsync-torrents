@@ -11,6 +11,7 @@ class RemoteConfig:
     host: str
     group: str = "media"
     ssh_key: str = ""
+    strict_host_key_checking: bool = False
 
 
 @dataclass

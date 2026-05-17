@@ -37,6 +37,10 @@ def cmd_sync(args) -> None:
     dest = resolve_remote_path(labels, cfg.paths)
     logging.info("START torrent=%r labels=%r dest=%r", name, labels, dest)
 
+    if args.dry_run:
+        logging.info("DRY-RUN: would rsync %r to %s and record hash %r", name, dest, hash_)
+        return
+
     run_rsync(
         source=Path(dir_) / name,
         remote_user=cfg.remote.user,
@@ -47,6 +51,7 @@ def cmd_sync(args) -> None:
         retry_attempts=cfg.sync.retry_attempts,
         retry_backoff=cfg.sync.retry_backoff,
         log_file=cfg.log_path(),
+        strict_host_key_checking=cfg.remote.strict_host_key_checking,
     )
 
     append_hash(cfg.synced_hashes_path(), hash_)
@@ -66,7 +71,7 @@ def cmd_watch(args) -> None:
         return
 
     try:
-        run_watch(cfg)
+        run_watch(cfg, dry_run=args.dry_run)
     finally:
         fcntl.flock(lock_fd, fcntl.LOCK_UN)
         lock_fd.close()
@@ -82,8 +87,10 @@ def main(argv=None) -> None:
         help="Path to config.toml (default: XDG_CONFIG_HOME/rsync-torrents/config.toml)",
     )
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("sync", help="Sync a completed torrent (Transmission hook)")
-    sub.add_parser("watch", help="Watch loop: remove finished, clean orphans, idle-shutdown")
+    sync_parser = sub.add_parser("sync", help="Sync a completed torrent (Transmission hook)")
+    sync_parser.add_argument("--dry-run", action="store_true", help="Log what would happen without making changes")
+    watch_parser = sub.add_parser("watch", help="Watch loop: remove finished, clean orphans, idle-shutdown")
+    watch_parser.add_argument("--dry-run", action="store_true", help="Log what would happen without making changes")
 
     args = parser.parse_args(argv)
     if args.config is None:

@@ -16,6 +16,16 @@ def test_ssh_command_with_key():
     assert "'/home/user/My Keys/id rsa'" in cmd
 
 
+def test_ssh_command_strict_host_key_checking_enabled():
+    cmd = build_ssh_command("", strict_host_key_checking=True)
+    assert "StrictHostKeyChecking=yes" in cmd
+
+
+def test_ssh_command_strict_host_key_checking_disabled():
+    cmd = build_ssh_command("", strict_host_key_checking=False)
+    assert "StrictHostKeyChecking=accept-new" in cmd
+
+
 def test_run_rsync_success(mocker):
     mock_run = mocker.patch("subprocess.run", return_value=mocker.Mock(returncode=0))
     run_rsync(

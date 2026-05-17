@@ -7,8 +7,9 @@ import time
 from pathlib import Path
 
 
-def build_ssh_command(ssh_key: str) -> str:
-    opts = ["-o", "StrictHostKeyChecking=accept-new"]
+def build_ssh_command(ssh_key: str, strict_host_key_checking: bool = False) -> str:
+    hk_value = "StrictHostKeyChecking=yes" if strict_host_key_checking else "StrictHostKeyChecking=accept-new"
+    opts = ["-o", hk_value]
     if ssh_key:
         opts += ["-i", ssh_key]
     return "ssh " + " ".join(shlex.quote(o) for o in opts)
@@ -25,8 +26,10 @@ def run_rsync(
     retry_attempts: int = 5,
     retry_backoff: int = 30,
     log_file: Path | None = None,
+    strict_host_key_checking: bool = False,
+    dry_run: bool = False,
 ) -> None:
-    ssh_cmd = build_ssh_command(ssh_key)
+    ssh_cmd = build_ssh_command(ssh_key, strict_host_key_checking=strict_host_key_checking)
     cmd = [
         "rsync",
         "-avz",
@@ -39,6 +42,9 @@ def run_rsync(
         str(source),
         f"{remote_user}@{remote_host}:{remote_dest}/",
     ]
+    if dry_run:
+        cmd.append("--dry-run")
+        logging.info("DRY-RUN: would rsync %s -> %s@%s:%s/", source, remote_user, remote_host, remote_dest)
     stdout = None
     if log_file:
         log_file = Path(log_file)

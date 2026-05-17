@@ -1,7 +1,7 @@
 import time
 
 from rsync_torrents.hashes import load_hashes, save_hashes
-from rsync_torrents.watch import run_watch
+from rsync_torrents.watch import _boot_time, run_watch
 
 
 def _cfg(tmp_config_path, mocker):
@@ -183,3 +183,169 @@ def test_no_shutdown_before_threshold(tmp_config, tmp_hashes, tmp_path, mocker):
     run_watch(cfg)
 
     mock_run.assert_not_called()
+
+
+# ── _boot_time ────────────────────────────────────────────────────────────────
+
+
+def test_boot_time_oserror(mocker):
+    mocker.patch("builtins.open", side_effect=OSError)
+    assert _boot_time() == 0
+
+
+# ── connection failure ────────────────────────────────────────────────────────
+
+
+def test_connection_failure_returns_early(tmp_config, mocker):
+    mocker.patch("transmission_rpc.Client", side_effect=Exception("connection refused"))
+    cfg = _cfg(tmp_config, mocker)
+    run_watch(cfg)  # should not raise
+
+
+# ── dry-run paths ─────────────────────────────────────────────────────────────
+
+
+def test_dry_run_does_not_remove_torrent(tmp_config, tmp_hashes, mocker):
+    save_hashes(tmp_hashes, {"abc123"})
+    torrent = _torrent(mocker, hash_string="abc123", status="stopped")
+    client = mocker.MagicMock()
+    client.get_torrents.return_value = [torrent]
+    mocker.patch("transmission_rpc.Client", return_value=client)
+
+    cfg = _cfg(tmp_config, mocker)
+    cfg.state.synced_hashes = str(tmp_hashes)
+    run_watch(cfg, dry_run=True)
+
+    client.remove_torrent.assert_not_called()
+
+
+def test_dry_run_does_not_remove_orphan(tmp_config, tmp_hashes, tmp_path, mocker):
+    dl_dir = tmp_path / "downloads"
+    dl_dir.mkdir()
+    (dl_dir / "KnownTorrent").mkdir()
+    orphan = dl_dir / "OrphanFile.mkv"
+    orphan.touch()
+
+    torrent = _torrent(
+        mocker, hash_string="abc", name="KnownTorrent", status="seed", download_dir=dl_dir
+    )
+    client = mocker.MagicMock()
+    client.get_torrents.return_value = [torrent]
+    mocker.patch("transmission_rpc.Client", return_value=client)
+
+    cfg = _cfg(tmp_config, mocker)
+    cfg.state.synced_hashes = str(tmp_hashes)
+    run_watch(cfg, dry_run=True)
+
+    assert orphan.exists()
+
+
+def test_dry_run_does_not_stop_daemon(tmp_config, tmp_hashes, tmp_path, mocker):
+    client = mocker.MagicMock()
+    client.get_torrents.return_value = []
+    mocker.patch("transmission_rpc.Client", return_value=client)
+    mock_run = mocker.patch("subprocess.run")
+
+    state_file = tmp_path / "last-active"
+    state_file.write_text(str(int(time.time()) - 9999))
+
+    cfg = _cfg(tmp_config, mocker)
+    cfg.state.synced_hashes = str(tmp_hashes)
+    cfg.transmission.state_file = str(state_file)
+    cfg.transmission.idle_threshold = 1800
+    run_watch(cfg, dry_run=True)
+
+    mock_run.assert_not_called()
+
+
+# ── error handling ────────────────────────────────────────────────────────────
+
+
+def test_remove_torrent_exception_is_logged(tmp_config, tmp_hashes, mocker):
+    save_hashes(tmp_hashes, {"abc123"})
+    torrent = _torrent(mocker, hash_string="abc123", status="stopped")
+    client = mocker.MagicMock()
+    client.get_torrents.return_value = [torrent]
+    client.remove_torrent.side_effect = Exception("rpc error")
+    mocker.patch("transmission_rpc.Client", return_value=client)
+
+    cfg = _cfg(tmp_config, mocker)
+    cfg.state.synced_hashes = str(tmp_hashes)
+    run_watch(cfg)  # should not raise
+
+
+def test_orphan_removal_oserror_is_logged(tmp_config, tmp_hashes, tmp_path, mocker):
+    dl_dir = tmp_path / "downloads"
+    dl_dir.mkdir()
+    (dl_dir / "KnownTorrent").mkdir()
+    orphan = dl_dir / "OrphanFile.mkv"
+    orphan.touch()
+
+    torrent = _torrent(
+        mocker, hash_string="abc", name="KnownTorrent", status="seed", download_dir=dl_dir
+    )
+    client = mocker.MagicMock()
+    client.get_torrents.return_value = [torrent]
+    mocker.patch("transmission_rpc.Client", return_value=client)
+    mocker.patch("pathlib.Path.unlink", side_effect=OSError("permission denied"))
+
+    cfg = _cfg(tmp_config, mocker)
+    cfg.state.synced_hashes = str(tmp_hashes)
+    run_watch(cfg)  # should not raise
+
+
+def test_failed_stop_does_not_delete_state_file(tmp_config, tmp_hashes, tmp_path, mocker):
+    client = mocker.MagicMock()
+    client.get_torrents.return_value = []
+    mocker.patch("transmission_rpc.Client", return_value=client)
+    mocker.patch("subprocess.run", return_value=mocker.Mock(returncode=1, stderr=b"failed"))
+
+    state_file = tmp_path / "last-active"
+    state_file.write_text(str(int(time.time()) - 9999))
+
+    cfg = _cfg(tmp_config, mocker)
+    cfg.state.synced_hashes = str(tmp_hashes)
+    cfg.transmission.state_file = str(state_file)
+    cfg.transmission.idle_threshold = 1800
+    run_watch(cfg)
+
+    assert state_file.exists()
+
+
+# ── idle clock edge cases ─────────────────────────────────────────────────────
+
+
+def test_idle_clock_started_when_no_state_file(tmp_config, tmp_hashes, tmp_path, mocker):
+    client = mocker.MagicMock()
+    client.get_torrents.return_value = []
+    mocker.patch("transmission_rpc.Client", return_value=client)
+    mocker.patch("subprocess.run")
+
+    state_file = tmp_path / "last-active"
+    cfg = _cfg(tmp_config, mocker)
+    cfg.state.synced_hashes = str(tmp_hashes)
+    cfg.transmission.state_file = str(state_file)
+    cfg.transmission.idle_threshold = 1800
+    run_watch(cfg)
+
+    assert state_file.exists()
+
+
+def test_state_file_reset_when_predates_boot(tmp_config, tmp_hashes, tmp_path, mocker):
+    client = mocker.MagicMock()
+    client.get_torrents.return_value = []
+    mocker.patch("transmission_rpc.Client", return_value=client)
+    mocker.patch("rsync_torrents.watch._boot_time", return_value=int(time.time()) + 9999)
+    mocker.patch("subprocess.run")
+
+    state_file = tmp_path / "last-active"
+    state_file.write_text(str(int(time.time()) - 9999))
+
+    cfg = _cfg(tmp_config, mocker)
+    cfg.state.synced_hashes = str(tmp_hashes)
+    cfg.transmission.state_file = str(state_file)
+    cfg.transmission.idle_threshold = 1800
+    run_watch(cfg)
+
+    # state file was deleted and recreated with current timestamp
+    assert state_file.exists()

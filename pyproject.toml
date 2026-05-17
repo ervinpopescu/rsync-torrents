@@ -15,7 +15,14 @@ dependencies = [
 rsync-torrents = "rsync_torrents.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8.0", "pytest-mock>=3.0", "pre-commit>=3.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.0",
+    "pre-commit>=3.0",
+    "pytest-cov>=7.1.0",
+    "hypothesis>=6.152.7",
+    "mypy>=2.1.0",
+]
 
 [tool.ruff]
 line-length = 98
@@ -25,5 +32,10 @@ target-version = "py312"
 select = ["E", "F", "W", "I", "UP"]
 ignore = ["E501"]
 
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "--cov=rsync_torrents --cov-report=term-missing --cov-fail-under=80"

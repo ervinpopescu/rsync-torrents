@@ -97,3 +97,29 @@ def test_cmd_watch_skips_when_locked(full_config, mocker, tmp_path, monkeypatch)
         lock_fd.close()
 
     mock_run_watch.assert_not_called()
+
+
+def test_cmd_sync_dry_run(full_config, monkeypatch, tmp_path):
+    monkeypatch.setenv("TR_TORRENT_NAME", "my.torrent")
+    monkeypatch.setenv("TR_TORRENT_DIR", str(tmp_path))
+    monkeypatch.setenv("TR_TORRENT_HASH", "abc123")
+
+    with patch("rsync_torrents.cli.run_rsync") as mock_rsync:
+        main(["-c", str(full_config), "sync", "--dry-run"])
+
+    mock_rsync.assert_not_called()
+    assert not (tmp_path / "synced-hashes").exists()
+
+
+def test_cmd_watch_dry_run(full_config, mocker):
+    mock_run_watch = mocker.patch("rsync_torrents.cli.run_watch")
+    main(["-c", str(full_config), "watch", "--dry-run"])
+    _, kwargs = mock_run_watch.call_args
+    assert kwargs.get("dry_run") is True
+
+
+def test_main_uses_default_config_path(mocker):
+    mock_cmd = mocker.patch("rsync_torrents.cli.cmd_sync")
+    main(["sync"])
+    args = mock_cmd.call_args[0][0]
+    assert "rsync-torrents" in str(args.config)

@@ -1,0 +1,7 @@
+[Unit]
+Description=Transmission RPC proxy
+Requires=transmission-daemon.service
+After=transmission-daemon.service
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd 127.0.0.1:9092
